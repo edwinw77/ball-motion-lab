@@ -28,7 +28,7 @@ Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,15 lb,2.47
 ```
 
 - **Coverstock:** any text containing plastic, urethane, solid, hybrid or pearl.
-- **Surface finish:** the grit is read from the text, and multi-step finishes use the final grit. "Polished" / "gloss" counts as polished; "compound" counts as a light polish.
+- **Surface finish:** the grit is read from the text, and multi-step finishes use the final grit. "Polished" / "gloss" counts as polished; "compound" counts as a light polish. A polish or compound over a coarse base grit (e.g. "500 Siaair / Factory Polish") is treated as a smooth surface, not as the base grit.
 - **Weight** can be written `15`, `15lb` or `15 lb`. Intermediate differential can be blank or `N/A` for symmetric balls.
 
 ## How the model works

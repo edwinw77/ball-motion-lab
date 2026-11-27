@@ -210,7 +210,21 @@ Ice (Ocean Blue/White),Storm,Polyester (Poly Hybrid),3500-grit Polished,Symmetri
 Ice (Ocean Blue/White),Storm,Polyester (Poly Hybrid),3500-grit Polished,Symmetric,14 lb,2.69,0.006,N/A
 Ice (Ocean Blue/White),Storm,Polyester (Poly Hybrid),3500-grit Polished,Symmetric,13 lb,2.71,0.005,N/A
 Ice (Ocean Blue/White),Storm,Polyester (Poly Hybrid),3500-grit Polished,Symmetric,12 lb,2.72,0.005,N/A
-Ice (Ocean Blue/White),Storm,Polyester (Poly Hybrid),3500-grit Polished,Symmetric,10 lb,2.72,0.005,N/A`;
+Ice (Ocean Blue/White),Storm,Polyester (Poly Hybrid),3500-grit Polished,Symmetric,10 lb,2.72,0.005,N/A
+Rhino (Pearl),Brunswick,Pearl Reactive (R-16),500 Siaair / Crown Factory Compound / Crown Factory Polish,Symmetric,16 lb,2.511,0.030,N/A
+Rhino (Pearl),Brunswick,Pearl Reactive (R-16),500 Siaair / Crown Factory Compound / Crown Factory Polish,Symmetric,15 lb,2.524,0.030,N/A
+Rhino (Pearl),Brunswick,Pearl Reactive (R-16),500 Siaair / Crown Factory Compound / Crown Factory Polish,Symmetric,14 lb,2.540,0.030,N/A
+Rhino (Pearl),Brunswick,Pearl Reactive (R-16),500 Siaair / Crown Factory Compound / Crown Factory Polish,Symmetric,13 lb,2.558,0.030,N/A
+Rhino (Pearl),Brunswick,Pearl Reactive (R-16),500 Siaair / Crown Factory Compound / Crown Factory Polish,Symmetric,12 lb,2.579,0.030,N/A
+Rhino (Pearl),Brunswick,Pearl Reactive (R-16),500 Siaair / Crown Factory Compound / Crown Factory Polish,Symmetric,11 lb,2.769,0.002,N/A
+Rhino (Pearl),Brunswick,Pearl Reactive (R-16),500 Siaair / Crown Factory Compound / Crown Factory Polish,Symmetric,10 lb,2.800,0.002,N/A
+Rhino (Solid),Brunswick,Solid Reactive (R-16),500 1500 3000 Siaair Micro Pad,Symmetric,16 lb,2.511,0.030,N/A
+Rhino (Solid),Brunswick,Solid Reactive (R-16),500 1500 3000 Siaair Micro Pad,Symmetric,15 lb,2.524,0.030,N/A
+Rhino (Solid),Brunswick,Solid Reactive (R-16),500 1500 3000 Siaair Micro Pad,Symmetric,14 lb,2.540,0.030,N/A
+Rhino (Solid),Brunswick,Solid Reactive (R-16),500 1500 3000 Siaair Micro Pad,Symmetric,13 lb,2.558,0.030,N/A
+Rhino (Solid),Brunswick,Solid Reactive (R-16),500 1500 3000 Siaair Micro Pad,Symmetric,12 lb,2.579,0.030,N/A
+Rhino (Solid),Brunswick,Solid Reactive (R-16),500 1500 3000 Siaair Micro Pad,Symmetric,11 lb,2.769,0.002,N/A
+Rhino (Solid),Brunswick,Solid Reactive (R-16),500 1500 3000 Siaair Micro Pad,Symmetric,10 lb,2.800,0.002,N/A`;
 
 // ---------- Constants ----------
 const FT = 0.3048, G = 9.81, R = 0.10795;            // ball radius 4.25 in
@@ -284,8 +298,11 @@ function parseGrit(s) {
   // multi-step finishes (e.g. "500 1000 1500 Siaair") end on the highest grit
   const nums = (s.match(/\d+(\.\d+)?/g) || []).map(Number).filter(x => x >= 100);
   const n = nums.length ? Math.max(...nums) : NaN;
-  const polished = /polish|shine|gloss/.test(s);
-  if (polished) return isNaN(n) ? 4000 : n;   // polish handled separately (see polishLevel)
+  // A polish or compound over a sanded base leaves the surface smoother than the base grit:
+  // treat polish as at least 3000 grit and compound as at least 2000 (polishLevel adds the rest).
+  const lvl = polishLevel(s);
+  if (lvl >= 1) return isNaN(n) ? 4000 : Math.max(n, 3000);
+  if (lvl > 0) return isNaN(n) ? 2000 : Math.max(n, 2000);
   return isNaN(n) ? 2000 : n;
 }
 
