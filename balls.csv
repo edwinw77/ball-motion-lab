@@ -1,0 +1,26 @@
+name,brand,coverstock type,surface finish (grit),symmetric/asymmetric,weight,RG,differential,intermediate differential
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,12lb,2.58,0.031,0.009
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,13lb,2.56,0.034,0.011
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,14lb,2.51,0.036,0.010
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,15lb,2.47,0.035,0.014
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,16lb,2.47,0.035,0.013
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,16 lb,2.50,0.031,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,15 lb,2.51,0.030,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,14 lb,2.53,0.031,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,13 lb,2.59,0.045,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,12 lb,2.65,0.035,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,11 lb,2.73,0.012,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,16 lb,2.47,0.050,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,15 lb,2.47,0.050,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,14 lb,2.48,0.047,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,13 lb,2.58,0.047,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,12 lb,2.64,0.037,N/A
+Sample Solid Asym,Sample,Solid Reactive,2000-grit Abralon,Asymmetric,14lb,2.52,0.051,0.014
+Sample Solid Asym,Sample,Solid Reactive,2000-grit Abralon,Asymmetric,15lb,2.50,0.053,0.016
+Sample Solid Asym,Sample,Solid Reactive,2000-grit Abralon,Asymmetric,16lb,2.49,0.054,0.016
+Sample Urethane,Sample,Urethane,2000-grit Abralon,Symmetric,14lb,2.62,0.014,
+Sample Urethane,Sample,Urethane,2000-grit Abralon,Symmetric,15lb,2.61,0.015,
+Sample Urethane,Sample,Urethane,2000-grit Abralon,Symmetric,16lb,2.60,0.015,
+Sample Plastic Spare,Sample,Plastic,Polished,Symmetric,14lb,2.70,0.009,
+Sample Plastic Spare,Sample,Plastic,Polished,Symmetric,15lb,2.69,0.010,
+Sample Plastic Spare,Sample,Plastic,Polished,Symmetric,16lb,2.68,0.010,

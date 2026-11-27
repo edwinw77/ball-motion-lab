@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ball Motion Lab</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #1d1d1f; --muted: #6b6b70; --line: #e3e1dc;
+    --accent: #1f5fd1; --wood: #e8d2a6; --wood-line: rgba(120, 84, 30, 0.10); --wood-line-5: rgba(120, 84, 30, 0.28);
+    --oil: 60, 120, 230; --gutter: #c9c6bf; --pin: #fdfdfb; --pin-stroke: #9a968c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416; --card: #1d1d20; --ink: #ececef; --muted: #9a9aa2; --line: #2e2e33;
+      --accent: #7aa7ff; --wood: #6b5735; --wood-line: rgba(255, 230, 180, 0.07); --wood-line-5: rgba(255, 230, 180, 0.2);
+      --oil: 110, 160, 255; --gutter: #3a3a3f; --pin: #e9e7e0; --pin-stroke: #77746c;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 20px 28px 8px; }
+  h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+  .sub { margin: 2px 0 0; color: var(--muted); }
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 12px 28px 32px; align-items: start; }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+  .panel, .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  .panel { padding: 6px 16px 16px; position: sticky; top: 12px; }
+  .panel section { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .panel section:last-child { border-bottom: 0; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  label, .field { display: block; margin: 10px 0 0; }
+  .lbl, label > span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+  select, input[type=number] { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { flex: 1; border: 0; background: transparent; color: var(--ink); padding: 7px 6px; font: inherit; font-size: 13px; cursor: pointer; border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: 0; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .seg button small { display: block; font-size: 11px; opacity: 0.75; }
+  .checks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .checks.col { flex-direction: column; gap: 4px; }
+  .chk { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; margin: 0; font-size: 13px; }
+  .chk input { margin: 0; }
+  .chk.dis { opacity: 0.45; cursor: not-allowed; }
+  input[type=range] { width: 100%; margin: 8px 0 0; accent-color: var(--accent); }
+  .note { color: var(--muted); font-size: 12.5px; margin: 10px 0 0; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .btn { display: inline-block; margin: 0; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font: inherit; font-size: 13px; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .err { color: #c0392b; font-size: 12.5px; white-space: pre-line; }
+  .main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .card { padding: 14px 16px; }
+  .lanewrap { position: relative; }
+  svg#lane { width: 100%; height: auto; display: block; }
+  #hover { position: absolute; pointer-events: none; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); display: none; white-space: nowrap; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 12.5px; margin-top: 8px; align-items: center; }
+  .legend svg { vertical-align: middle; margin-right: 4px; }
+  .cap { color: var(--muted); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+  .tablewrap { overflow-x: auto; }
+  .warn { color: #b9770e; }
+  details summary { cursor: pointer; font-weight: 600; }
+  details p, details li { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ball Motion Lab</h1>
+  <p class="sub">How ball specs change the path down the lane: right-handed bowler, fresh oil.</p>
+</header>
+
+<main class="layout">
+  <aside class="panel">
+    <section>
+      <h2>Compare</h2>
+      <div class="seg" id="modeSeg">
+        <button data-v="weights" class="on">One ball, weights</button>
+        <button data-v="balls">Balls, one weight</button>
+      </div>
+      <div id="weightsMode">
+        <label><span>Ball</span><select id="ballSel"></select></label>
+        <div class="field"><span class="lbl">Weights (up to 6)</span><div id="weightChecks" class="checks"></div></div>
+      </div>
+      <div id="ballsMode" hidden>
+        <label><span>Weight</span><select id="weightSel"></select></label>
+        <div class="field"><span class="lbl">Balls (up to 6)</span><div id="ballChecks" class="checks col"></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Conditions</h2>
+      <label><span>Oil pattern</span><select id="patternSel"></select></label>
+      <div class="field"><span class="lbl">Ball speed <b id="speedVal" style="float:right;color:var(--ink)"></b></span><div class="seg" id="speedSeg"></div>
+        <input type="range" id="speedRange" aria-label="Ball speed">
+      </div>
+      <div class="field"><span class="lbl">Speed units</span>
+        <div class="seg" id="unitsSeg">
+          <button data-v="mph">mph</button>
+          <button data-v="kmh">km/h</button>
+        </div>
+      </div>
+      <div class="field"><span class="lbl">Rev rate <b id="rpmVal" style="float:right;color:var(--ink)"></b></span><div class="seg" id="revSeg"></div>
+        <input type="range" id="revRange" min="100" max="600" step="10" aria-label="Rev rate (rpm)">
+      </div>
+      <label><span>Release board (at foul line), empty = optimal</span><input type="number" id="releaseIn" min="1" max="39" step="0.5" placeholder="Optimal (auto aim) / 25 (manual)"></label>
+      <div class="field"><span class="lbl">Aim</span>
+        <div class="seg" id="aimSeg">
+          <button data-v="auto" class="on">Each ball</button>
+          <button data-v="same">Same line</button>
+          <button data-v="manual">Manual</button>
+        </div>
+      </div>
+      <label id="targetWrap" hidden><span>Target board at arrows (15 ft)</span><input type="number" id="targetIn" min="1" max="39" step="0.5" value="10"></label>
+      <p class="note">Right-handed, axis rotation 45°, axis tilt 15°.</p>
+    </section>
+
+    <section>
+      <h2>Ball data</h2>
+      <div id="dataStatus" class="note" style="margin-top:0"></div>
+      <div class="row">
+        <label class="btn">Load CSV<input type="file" id="csvIn" accept=".csv,text/csv" hidden></label>
+        <button id="tmplBtn" class="btn ghost">Template</button>
+        <button id="resetBtn" class="btn ghost">Built-in data</button>
+      </div>
+      <div id="dataErr" class="err"></div>
+    </section>
+  </aside>
+
+  <section class="main">
+    <div class="card">
+      <div class="lanewrap">
+        <svg id="lane" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="hover"></div>
+      </div>
+      <div class="legend">
+        <span><svg width="14" height="14"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Hook starts</span>
+        <span><svg width="14" height="14"><rect x="3" y="3" width="8" height="8" transform="rotate(45 7 7)" fill="currentColor"/></svg>Breakpoint</span>
+        <span><svg width="14" height="14"><circle cx="7" cy="7" r="4.5" fill="currentColor"/></svg>Starts rolling</span>
+        <span><svg width="22" height="14"><rect x="1" y="2" width="20" height="10" rx="2" fill="rgba(60,120,230,0.35)"/></svg>Oil</span>
+        <span class="cap" id="scaleCap"></span>
+      </div>
+    </div>
+
+    <div class="card tablewrap">
+      <table id="results"></table>
+      <p class="cap" style="margin:8px 0 0">Boards count from the right gutter (1) to the left (39). With the release empty, each ball gets its optimal line (<span class="cap">opt</span>): it hits the pocket with an entry angle as close to 6° as possible, breakpoint at board 4 or further left. With a release set, <span class="warn">*</span> means it was moved left so the ball stays off the right gutter. <b>Same line</b> throws every ball on one shared line, the average of their own lines (<span class="cap">same</span>), so differences show directly. <b>Hook shape</b> is how far the ball travels while making most of its turn: under 24 ft angular, 24–28 ft medium, 28 ft and over arc.</p>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary>How the model works</summary>
+        <ul>
+          <li>The ball is a rigid sphere sliding and spinning on the lane. Friction acts against the slip at the contact point. It slows the ball, turns it left (the hook) and converts spin until the ball rolls; then the path straightens.</li>
+          <li><b>RG</b> sets the moment of inertia (I = m·RG²). Lower RG converts to roll sooner (earlier, smoother read); higher RG goes longer before hooking.</li>
+          <li><b>Differential</b> (plus intermediate differential for asymmetric balls) stands in for flare. More flare means more hook. Asymmetric balls also respond more sharply where the oil ends. These are calibrated factors, not full core dynamics.</li>
+          <li><b>Coverstock and grit</b> set friction in oil and on dry boards, and how friction rises as the oil thins. Solid, hybrid and sanded surfaces start gripping as soon as the oil thins (earlier read, smooth arc). Pearl, finely sanded and polished surfaces stay slick until the boards are nearly dry, then grab hard (skid, then snap). Polish also lowers friction in the oil (more length).</li>
+          <li><b>Asymmetric cores</b> (intermediate differential) make the response sharper, so the motion is more angular.</li>
+          <li><b>Weight</b> on its own barely changes the path (mass cancels out of the friction equations). Weight comparisons differ because each weight has different RG and differential.</li>
+          <li>Oil is fresh and thins gradually through the midlane before ending. House patterns have less oil on the outside boards; the sport pattern is flat across.</li>
+          <li>Not modelled: layout (pin-to-PAP, drilling angle), which in real life can make the same ball smoother or more angular. A neutral layout is assumed.</li>
+        </ul>
+      </details>
+    </div>
+  </section>
+</main>
+
+<script>
+// ---------- Built-in data (same format as balls.csv) ----------
+const BUILTIN_CSV = `name,brand,coverstock type,surface finish (grit),symmetric/asymmetric,weight,RG,differential,intermediate differential
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,12lb,2.58,0.031,0.009
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,13lb,2.56,0.034,0.011
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,14lb,2.51,0.036,0.010
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,15lb,2.47,0.035,0.014
+Ion Pro Pearl,Storm,Pearl Reactive,4000-grit Abralon,Asymmetric,16lb,2.47,0.035,0.013
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,16 lb,2.50,0.031,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,15 lb,2.51,0.030,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,14 lb,2.53,0.031,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,13 lb,2.59,0.045,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,12 lb,2.65,0.035,N/A
+Electrify G-O,Storm,Pearl Reactive (Reactor Pearl),Reacta Gloss (1500-grit Polished),Symmetric,11 lb,2.73,0.012,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,16 lb,2.47,0.050,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,15 lb,2.47,0.050,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,14 lb,2.48,0.047,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,13 lb,2.58,0.047,N/A
+Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,12 lb,2.64,0.037,N/A
+Sample Solid Asym,Sample,Solid Reactive,2000-grit Abralon,Asymmetric,14lb,2.52,0.051,0.014
+Sample Solid Asym,Sample,Solid Reactive,2000-grit Abralon,Asymmetric,15lb,2.50,0.053,0.016
+Sample Solid Asym,Sample,Solid Reactive,2000-grit Abralon,Asymmetric,16lb,2.49,0.054,0.016
+Sample Urethane,Sample,Urethane,2000-grit Abralon,Symmetric,14lb,2.62,0.014,
+Sample Urethane,Sample,Urethane,2000-grit Abralon,Symmetric,15lb,2.61,0.015,
+Sample Urethane,Sample,Urethane,2000-grit Abralon,Symmetric,16lb,2.60,0.015,
+Sample Plastic Spare,Sample,Plastic,Polished,Symmetric,14lb,2.70,0.009,
+Sample Plastic Spare,Sample,Plastic,Polished,Symmetric,15lb,2.69,0.010,
+Sample Plastic Spare,Sample,Plastic,Polished,Symmetric,16lb,2.68,0.010,`;
+
+// ---------- Constants ----------
+const FT = 0.3048, G = 9.81, R = 0.10795;            // ball radius 4.25 in
+const LANE_W = 1.0541, BW = LANE_W / 39;               // 41.5 in, 39 boards
+const ARROWS_FT = 15, PINS_FT = 60, POCKET = 17.5;
+const COLORS = ['#1f5fd1', '#d6452f', '#1a9a6b', '#d08a12', '#8a4fd8', '#0f9fb8'];
+const MAX_LINES = COLORS.length;
+
+const COVERS = {
+  // shape: base angularity of the friction response (0 = reads early, smooth arc; 1 = skids, then snaps)
+  plastic:         { label: 'Plastic',         oil: 0.008, dry: 0.04,  shape: 0.3 },
+  urethane:        { label: 'Urethane',        oil: 0.016, dry: 0.09,  shape: -0.1 },
+  reactive_solid:  { label: 'Solid reactive',  oil: 0.024, dry: 0.15,  shape: 0.0 },
+  reactive_hybrid: { label: 'Hybrid reactive', oil: 0.021, dry: 0.155, shape: 0.15 },
+  reactive_pearl:  { label: 'Pearl reactive',  oil: 0.016, dry: 0.16,  shape: 0.5 },
+};
+const PATTERNS = {
+  house40: { label: 'House, 40 ft', len: 40, taper: 6, crown: true, fade: 0.35 },
+  short35: { label: 'Short house, 35 ft', len: 35, taper: 5, crown: true, fade: 0.35 },
+  long45:  { label: 'Long house, 45 ft', len: 45, taper: 6, crown: true, fade: 0.35 },
+  sport41: { label: 'Sport (flat), 41 ft', len: 41, taper: 4, crown: false, fade: 0.15 },
+};
+const SPEEDS = { vlow: { label: 'Very low', v: 20 / 1.609344 }, low:{ label: 'Low', v: 15 }, med: { label: 'Medium', v: 17 }, high: { label: 'High', v: 19 } };
+const REVS   = { vlow: { label: 'Very low', v: 150 }, low: { label: 'Low', v: 250 }, med: { label: 'Medium', v: 350 }, high: { label: 'High', v: 450 } };
+
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const smooth = t => t * t * (3 - 2 * t);
+
+// ---------- CSV ----------
+const ALIASES = {
+  name: ['name', 'ball', 'ball name'],
+  brand: ['brand', 'manufacturer'],
+  cover: ['coverstock type', 'coverstock', 'cover', 'cover type'],
+  grit: ['surface finish (grit)', 'surface finish', 'surface', 'surface_grit', 'grit', 'finish'],
+  sym: ['symmetric/asymmetric', 'symmetry', 'core type', 'core'],
+  weight: ['weight', 'weight_lb', 'weight (lb)', 'weight (lbs)'],
+  rg: ['rg'],
+  diff: ['differential', 'diff', 'total differential'],
+  intDiff: ['intermediate differential', 'intermediate differential (asym only)', 'int_differential', 'int diff', 'intermediate diff', 'mass bias'],
+};
+
+function splitCSVLine(line) {
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) {
+      if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') q = false;
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+
+function parseCover(s) {
+  s = (s || '').toLowerCase();
+  if (/plastic|polyester/.test(s)) return 'plastic';
+  if (/urethane/.test(s) && !/reactive/.test(s)) return 'urethane';
+  if (/pearl/.test(s)) return 'reactive_pearl';
+  if (/hybrid/.test(s)) return 'reactive_hybrid';
+  if (/solid|reactive/.test(s)) return 'reactive_solid';
+  return null;
+}
+const isPolished = s => /polish|shine|gloss/i.test(s || '');
+function parseGrit(s) {
+  s = (s || '').toLowerCase();
+  const n = parseFloat((s.match(/\d+(\.\d+)?/) || [])[0]);
+  const polished = /polish|shine|gloss/.test(s);
+  if (polished) return isNaN(n) ? 4000 : n;   // polish handled separately (see isPolished)
+  return isNaN(n) ? 2000 : n;
+}
+
+function parseCSV(text) {
+  const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim());
+  if (lines.length < 2) throw new Error('CSV has no data rows.');
+  const head = splitCSVLine(lines[0]).map(h => h.toLowerCase());
+  const col = {};
+  for (const [k, names] of Object.entries(ALIASES)) col[k] = head.findIndex(h => names.includes(h));
+  const missing = ['name', 'cover', 'weight', 'rg', 'diff'].filter(k => col[k] < 0);
+  if (missing.length) throw new Error('Missing column(s): ' + missing.join(', '));
+  const balls = new Map(), errors = [];
+  lines.slice(1).forEach((line, i) => {
+    const c = splitCSVLine(line), get = k => (col[k] >= 0 ? c[col[k]] || '' : '');
+    const name = get('name');
+    const cover = parseCover(get('cover'));
+    const weight = parseFloat(get('weight')), rg = parseFloat(get('rg')), diff = parseFloat(get('diff'));
+    const intDiff = parseFloat(get('intDiff')) || 0;
+    const sym = /asym/i.test(get('sym')) ? 'asymmetric' : (get('sym') ? 'symmetric' : (intDiff > 0 ? 'asymmetric' : 'symmetric'));
+    if (!name || !cover || isNaN(weight) || isNaN(rg) || isNaN(diff)) { errors.push(`Row ${i + 2} skipped (missing or unreadable values).`); return; }
+    if (!balls.has(name)) balls.set(name, { name, brand: get('brand'), cover, coverText: get('cover'), gritText: get('grit'), grit: parseGrit(get('grit')), polished: isPolished(get('grit')), sym, weights: new Map() });
+    balls.get(name).weights.set(weight, { rg, diff, intDiff: sym === 'asymmetric' ? intDiff : 0 });
+  });
+  if (!balls.size) throw new Error('No usable rows.\n' + errors.join('\n'));
+  return { balls, errors };
+}
+
+// ---------- Lane oil ----------
+function oilAt(board, yft, pat) {
+  const end = pat.len, start = pat.len - pat.taper, mid = pat.len * 0.4;
+  // oil thins gradually through the midlane, then tapers off at the end of the pattern
+  const base = yft <= mid ? 1 : 1 - pat.fade * Math.min(1, (yft - mid) / (start - mid));
+  const oy = yft <= start ? base : yft >= end ? 0 : base * smooth(1 - (yft - start) / (end - start));
+  const e = Math.min(board, 40 - board);       // boards from the nearest gutter
+  let ox;
+  if (pat.crown) ox = e >= 12 ? 1 : e <= 3 ? 0.6 : 0.6 + 0.4 * smooth((e - 3) / 9);
+  else ox = e <= 2 ? 0.85 : 1;
+  return oy * ox;
+}
+
+// ---------- Physics ----------
+// Frame: X to the bowler's right (0 at right gutter, negative toward left), Y down lane, Z up.
+// Board value = -X / BW + 0.5  (board 1 = right edge for a right-hander; 17.5 = pocket).
+function simulate(ball, spec, cond) {
+  const cov = COVERS[ball.cover];
+  const lg = Math.log10(2000) - Math.log10(Math.max(100, ball.grit));
+  const muOil = cov.oil * clamp(1 + 0.45 * lg, 0.6, 1.5) * (ball.polished ? 0.7 : 1);
+  const muDry = cov.dry * clamp(1 - 0.08 * lg, 0.85, 1.15);
+  const intD = spec.intDiff || 0;
+  const flare = spec.diff + 0.6 * intD;
+  const H = 1 + 14 * flare;                   // flare-driven hook boost (calibrated)
+  // Friction response: mu = muOil + (muDry - muOil) * dryness^p. Low p grabs as soon as the oil
+  // thins (early read, smooth arc); high p stays slick until the boards are dry, then snaps.
+  const angularity = cov.shape
+    + clamp(0.15 * Math.log2(ball.grit / 2000), -0.3, 0.3)   // finer sanding: later, sharper
+    + (ball.polished ? 0.3 : 0)                                 // polish: skid then snap
+    + 10 * intD;                                                // asym core: sharper response
+  const p = 0.8 + 4 * clamp(angularity, 0, 1.3);
+  const rg = spec.rg * 0.0254, k = R / (rg * rg);
+  const pat = PATTERNS[cond.pattern];
+
+  let X = -(cond.release - 0.5) * BW, Y = 0;
+  const Xt = -(cond.target - 0.5) * BW, Yt = ARROWS_FT * FT;
+  const v0 = cond.speed * 0.44704, dist = Math.hypot(Xt - X, Yt);
+  let vx = v0 * (Xt - X) / dist, vy = v0 * Yt / dist;
+  const dx0 = vx / v0, dy0 = vy / v0;
+  const wh = cond.rpm * 2 * Math.PI / 60 * Math.cos(cond.tilt * Math.PI / 180);
+  const th = cond.axisRot * Math.PI / 180;
+  // roll axis p = (-dy, dx); side-roll axis = -d (gives a left hook)
+  let wx = wh * (Math.cos(th) * -dy0 + Math.sin(th) * -dx0);
+  let wy = wh * (Math.cos(th) * dx0 + Math.sin(th) * -dy0);
+
+  const dt = 0.001, end = PINS_FT * FT, pts = [];
+  let t = 0, rolling = false, rollFt = null, gutter = null, nextRec = 0, maxLat = 0;
+  while (Y < end && t < 8) {
+    const board = -X / BW + 0.5, yft = Y / FT;
+    const dry = 1 - oilAt(board, yft, pat);
+    const mu = muOil + (muDry - muOil) * Math.pow(dry, p);
+    const sp = Math.hypot(vx, vy), dX = vx / sp, dY = vy / sp;
+    let ax, ay, lat = 0;
+    if (!rolling) {
+      const cx = vx - R * wy, cy = vy + R * wx, s = Math.hypot(cx, cy);
+      if (s < 0.02) { rolling = true; rollFt = yft; }
+      else {
+        const fx = -mu * G * cx / s, fy = -mu * G * cy / s;
+        const fn = fx * -dY + fy * dX;          // component toward the left of travel
+        ax = fx + (H - 1) * fn * -dY;
+        ay = fy + (H - 1) * fn * dX;
+        wx += k * fy * dt; wy += -k * fx * dt;
+        lat = fn * H;
+      }
+    }
+    if (rolling) { const dec = 0.012 * G; ax = -dec * dX; ay = -dec * dY; }
+    vx += ax * dt; vy += ay * dt; X += vx * dt; Y += vy * dt; t += dt;
+    if (rolling) { wx = -vy / R; wy = vx / R; }
+    if (!rolling) maxLat = Math.max(maxLat, lat);
+    if (Y >= nextRec) { pts.push({ y: Y / FT, b: -X / BW + 0.5, lat, rolling, h: Math.atan2(-vx, vy) }); nextRec += 0.1 * FT; }
+    if (X > 0) { gutter = 'right'; break; }
+    if (X < -LANE_W) { gutter = 'left'; break; }
+  }
+  // finish exactly at the head pin line
+  let pinsBoard = null;
+  if (!gutter) {
+    const Xend = X - vx * (Y - end) / vy;
+    pinsBoard = -Xend / BW + 0.5;
+    pts.push({ y: PINS_FT, b: pinsBoard, lat: 0, rolling, h: Math.atan2(-vx, vy) });
+  }
+  // features
+  let bp = pts[0];
+  for (const p of pts) if (p.b < bp.b) bp = p;
+  const breakpoint = bp.y > 2 ? bp : null;
+  // Hook shape from the change in direction: hook starts at 10% of the total turn, and the
+  // turn length is how far the ball travels while making the middle 80% of it.
+  // Short turn length = angular (skid, then snap); long = smooth arc.
+  const h0 = pts[0].h, hEnd = pts[pts.length - 1].h, turn = hEnd - h0;
+  const at = frac => pts.find(p => p.h - h0 >= frac * turn) || null;
+  const t10 = turn > 0.005 ? at(0.1) : null, t90 = turn > 0.005 ? at(0.9) : null;
+  const hookStart = t10;
+  const turnLen = t10 && t90 ? t90.y - t10.y : null;
+  return {
+    pts, gutter, pinsBoard, rollFt, breakpoint, hookStart, angularity, turnLen, turnDeg: turn * 180 / Math.PI, target: cond.target, release: cond.release,
+    entry: Math.atan2(-vx, vy) * 180 / Math.PI,
+    pinsSpeed: Math.hypot(vx, vy) / 0.44704,
+  };
+}
+
+// Auto aim: find the target that reaches the pocket. If that line drags the ball onto the
+// right gutter (breakpoint inside board 6), move the release left like a bowler would.
+// Optimal line (release left empty): over all releases, the pocket hit whose entry angle is
+// closest to 6°, keeping the breakpoint at board 4 or further left. Coarse scan, then refine.
+const IDEAL_ENTRY = 6;
+function optimalAim(ball, spec, cond) {
+  let best = null, bestScore = Infinity;
+  const tryRel = rel => {
+    const r = aimFrom(ball, spec, { ...cond, release: rel });
+    const ok = !r.gutter && !r.aimNote && Math.abs(r.pinsBoard - POCKET) < 0.3 && (!r.breakpoint || r.breakpoint.b >= 4);
+    if (!ok) return;
+    const score = Math.abs(r.entry - IDEAL_ENTRY);
+    if (score < bestScore) { bestScore = score; best = r; }
+  };
+  for (let rel = 8; rel <= 38; rel += 3) tryRel(rel);
+  if (!best) return autoAim(ball, spec, { ...cond, release: 25 });
+  const c = best.release;
+  for (const d of [-1.5, -1, -0.5, 0.5, 1, 1.5]) if (c + d >= 1 && c + d <= 39) tryRel(c + d);
+  best.optimal = true;
+  return best;
+}
+
+function autoAim(ball, spec, cond) {
+  let last = null;
+  for (let rel = cond.release; rel <= 36; rel += 1.5) {
+    const r = aimFrom(ball, spec, { ...cond, release: rel });
+    const ok = !r.gutter && !r.aimNote && Math.abs(r.pinsBoard - POCKET) < 0.3 && (!r.breakpoint || r.breakpoint.b >= 6);
+    if (ok) { if (rel !== cond.release) r.moved = true; return r; }
+    last = last || r;
+  }
+  last.aimNote = last.aimNote && last.aimNote.startsWith('Not enough')
+    ? 'Not enough hook to reach the pocket on these conditions.'
+    : 'Too much hook for these conditions: even from the far left, the ball nearly reaches the right gutter before coming back. Try lower revs or a weaker ball.';
+  return last;
+}
+
+function aimFrom(ball, spec, cond) {
+  const f = tgt => {
+    const r = simulate(ball, spec, { ...cond, target: tgt });
+    return { r, v: r.gutter === 'right' ? -99 : r.gutter === 'left' ? 99 : r.pinsBoard - POCKET };
+  };
+  let lo = 1, hi = 39, flo = f(lo), fhi = f(hi);
+  if (flo.v > 0) return { ...flo.r, aimNote: 'Hooks past the pocket even aiming at board 1: move release right.' };
+  if (fhi.v < 0) return { ...fhi.r, aimNote: 'Not enough hook to reach the pocket from here.' };
+  let best = flo;
+  for (let i = 0; i < 22; i++) {
+    const mid = (lo + hi) / 2, fm = f(mid);
+    best = fm;
+    if (Math.abs(fm.v) < 0.05) break;
+    if (fm.v < 0) lo = mid; else hi = mid;
+  }
+  return best.r;
+}
+
+// ---------- State ----------
+// localStorage can be unavailable (privacy settings, some previews): never let it break the page.
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: k => { try { localStorage.removeItem(k); } catch {} },
+};
+const state = {
+  mode: 'weights', ball: null, weights: new Set(), weight: null, balls: new Set(),
+  pattern: 'house40', speed: 'med', speedMph: 17, rev: 'med', rpm: 350, release: null, aim: 'auto', target: 10,
+  units: store.get('bml.units') === 'kmh' ? 'kmh' : 'mph',
+};
+let DB = new Map();
+const $ = id => document.getElementById(id);
+
+function loadData(text, source) {
+  const { balls, errors } = parseCSV(text);
+  DB = balls;
+  const rows = [...balls.values()].reduce((n, b) => n + b.weights.size, 0);
+  $('dataStatus').textContent = `${balls.size} ball${balls.size > 1 ? 's' : ''}, ${rows} weight rows (${source}).`;
+  $('dataErr').textContent = errors.join('\n');
+  // reset selections
+  const names = [...DB.keys()];
+  state.ball = names[0];
+  state.weights = new Set(sortedWeights(DB.get(state.ball)).slice(0, MAX_LINES));
+  const allW = allWeights();
+  state.weight = allW.includes(15) ? 15 : allW[0];
+  state.balls = new Set(names.filter(n => DB.get(n).weights.has(state.weight)).slice(0, 3));
+  buildSelectors();
+  render();
+}
+const sortedWeights = b => [...b.weights.keys()].sort((a, c) => c - a);
+const allWeights = () => [...new Set([...DB.values()].flatMap(b => [...b.weights.keys()]))].sort((a, c) => c - a);
+
+// ---------- Controls ----------
+const MPH_TO_KMH = 1.609344;
+const fmtSpeed = (mph, dp = 1) => state.units === 'kmh' ? `${(mph * MPH_TO_KMH).toFixed(dp)} km/h` : `${mph.toFixed(dp)} mph`;
+const refreshSpeedLabels = () => $('speedSeg').querySelectorAll('button').forEach(b => { b.querySelector('small').textContent = fmtSpeed(SPEEDS[b.dataset.v].v, 0); });
+
+// Speed slider works in the chosen units: 10–22 mph or 16–36 km/h.
+function syncSpeeds(moveSlider = true) {
+  const r = $('speedRange'), kmh = state.units === 'kmh';
+  Object.assign(r, kmh ? { min: 16, max: 36, step: 0.5 } : { min: 10, max: 22, step: 0.25 });
+  if (moveSlider) r.value = kmh ? state.speedMph * MPH_TO_KMH : state.speedMph;
+  $('speedVal').textContent = fmtSpeed(state.speedMph, 1);
+  $('speedSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === state.speed));
+}
+
+// Keep rev buttons, slider and readout in step (buttons are presets; slider is any value).
+function syncRevs() {
+  $('revRange').value = state.rpm;
+  $('rpmVal').textContent = state.rpm + ' rpm';
+  $('revSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === state.rev));
+}
+
+function seg(id, options, key, onChange) {
+  const el = $(id);
+  if (options) el.innerHTML = Object.entries(options).map(([k, o]) => `<button data-v="${k}">${o.label}<small>${id === 'speedSeg' ? fmtSpeed(o.v, 0) : o.v + ' rpm'}</small></button>`).join('');
+  const sync = () => el.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === state[key]));
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state[key] = b.dataset.v; sync(); onChange && onChange(); render();
+  });
+  sync();
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function buildSelectors() {
+  $('ballSel').innerHTML = [...DB.keys()].map(n => `<option ${n === state.ball ? 'selected' : ''}>${esc(n)}</option>`).join('');
+  $('weightSel').innerHTML = allWeights().map(w => `<option value="${w}" ${w === state.weight ? 'selected' : ''}>${w} lb</option>`).join('');
+  buildWeightChecks(); buildBallChecks();
+}
+function buildWeightChecks() {
+  const b = DB.get(state.ball);
+  $('weightChecks').innerHTML = sortedWeights(b).map(w =>
+    `<label class="chk"><input type="checkbox" value="${w}" ${state.weights.has(w) ? 'checked' : ''}>${w} lb</label>`).join('');
+}
+function buildBallChecks() {
+  $('ballChecks').innerHTML = [...DB.values()].map(b => {
+    const has = b.weights.has(state.weight), on = state.balls.has(b.name) && has;
+    const dis = !has;
+    return `<label class="chk ${dis ? 'dis' : ''}" title="${has ? '' : 'No ' + state.weight + ' lb spec'}"><input type="checkbox" value="${esc(b.name)}" ${on ? 'checked' : ''} ${dis ? 'disabled' : ''}>${esc(b.name)}</label>`;
+  }).join('');
+}
+
+// Tick/untick; when already at the limit, drop the earliest selection to make room.
+function toggleLimited(set, v, on) {
+  if (!on) { set.delete(v); return; }
+  if (set.size >= MAX_LINES) set.delete(set.values().next().value);
+  set.add(v);
+}
+
+function initControls() {
+  $('patternSel').innerHTML = Object.entries(PATTERNS).map(([k, p]) => `<option value="${k}">${p.label}</option>`).join('');
+  $('patternSel').value = state.pattern;
+  $('patternSel').onchange = e => { state.pattern = e.target.value; render(); };
+  seg('modeSeg', null, 'mode', () => { $('weightsMode').hidden = state.mode !== 'weights'; $('ballsMode').hidden = state.mode !== 'balls'; });
+  seg('speedSeg', SPEEDS, 'speed', () => { state.speedMph = SPEEDS[state.speed].v; syncSpeeds(); });
+  seg('unitsSeg', null, 'units', () => { store.set('bml.units', state.units); refreshSpeedLabels(); syncSpeeds(); });
+  $('speedRange').addEventListener('input', e => {
+    const v = +e.target.value;
+    state.speedMph = state.units === 'kmh' ? v / MPH_TO_KMH : v;
+    state.speed = Object.keys(SPEEDS).find(k => Math.abs(SPEEDS[k].v - state.speedMph) < 0.05) || 'custom';
+    syncSpeeds(false); render();
+  });
+  syncSpeeds();
+  seg('revSeg', REVS, 'rev', () => { state.rpm = REVS[state.rev].v; syncRevs(); });
+  $('revRange').addEventListener('input', e => {
+    state.rpm = +e.target.value;
+    state.rev = Object.keys(REVS).find(k => REVS[k].v === state.rpm) || 'custom';
+    syncRevs(); render();
+  });
+  syncRevs();
+  seg('aimSeg', null, 'aim', () => { $('targetWrap').hidden = state.aim !== 'manual'; });
+  $('releaseIn').oninput = e => {
+    if (e.target.value.trim() === '') { state.release = null; render(); return; }
+    const v = parseFloat(e.target.value); if (v >= 1 && v <= 39) { state.release = v; render(); }
+  };
+  $('targetIn').oninput = e => { const v = parseFloat(e.target.value); if (v >= 1 && v <= 39) { state.target = v; render(); } };
+  $('ballSel').onchange = e => { state.ball = e.target.value; state.weights = new Set(sortedWeights(DB.get(state.ball)).slice(0, MAX_LINES)); buildWeightChecks(); render(); };
+  $('weightChecks').onchange = e => { const w = parseFloat(e.target.value); toggleLimited(state.weights, w, e.target.checked); buildWeightChecks(); render(); };
+  $('weightSel').onchange = e => { state.weight = parseFloat(e.target.value); buildBallChecks(); render(); };
+  $('ballChecks').onchange = e => { const n = e.target.value; toggleLimited(state.balls, n, e.target.checked); buildBallChecks(); render(); };
+  $('csvIn').onchange = async e => {
+    const file = e.target.files[0]; if (!file) return;
+    const text = await file.text();
+    try { loadData(text, file.name); store.set('bml.csv', text); store.set('bml.src', file.name); }
+    catch (err) { $('dataErr').textContent = err.message; }
+    e.target.value = '';
+  };
+  $('resetBtn').onclick = () => { store.del('bml.csv'); store.del('bml.src'); loadData(BUILTIN_CSV, 'built-in'); };
+  $('tmplBtn').onclick = () => {
+    const blob = new Blob([BUILTIN_CSV.split('\n').slice(0, 3).join('\n') + '\n'], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'balls-template.csv'; a.click();
+  };
+}
+
+// ---------- Drawing ----------
+const VW = 1240, LEFT = 46, RIGHT = 16, TOP = 26, SB = 7, LEN_FT = 63;
+const SX = (VW - LEFT - RIGHT) / LEN_FT, LANE_H = 39 * SB, VH = TOP + LANE_H + 30;
+const px = yft => LEFT + yft * SX;
+const py = b => TOP + (39.5 - b) * SB;        // board value -> y (board 39 at top, 1 at bottom)
+
+function laneBackground() {
+  const pat = PATTERNS[state.pattern];
+  let s = `<rect x="${LEFT}" y="${TOP - 8}" width="${LEN_FT * SX}" height="8" fill="var(--gutter)"/>`;
+  s += `<rect x="${LEFT}" y="${TOP + LANE_H}" width="${LEN_FT * SX}" height="8" fill="var(--gutter)"/>`;
+  s += `<rect x="${LEFT}" y="${TOP}" width="${LEN_FT * SX}" height="${LANE_H}" fill="var(--wood)"/>`;
+  // oil
+  for (let y = 0; y < pat.len; y += 1) for (let b = 1; b <= 39; b++) {
+    const o = oilAt(b, y + 0.5, pat);
+    if (o > 0.02) s += `<rect x="${px(y)}" y="${py(b) - SB / 2}" width="${SX + 0.5}" height="${SB + 0.3}" fill="rgba(var(--oil),${(o * 0.38).toFixed(3)})"/>`;
+  }
+  // boards
+  for (let b = 1; b < 39; b++) {
+    const y = TOP + (39 - b) * SB;
+    s += `<line x1="${LEFT}" x2="${LEFT + LEN_FT * SX}" y1="${y}" y2="${y}" stroke="${b % 5 === 0 ? 'var(--wood-line-5)' : 'var(--wood-line)'}" stroke-width="1"/>`;
+  }
+  // foul line, oil end
+  s += `<line x1="${px(0)}" x2="${px(0)}" y1="${TOP}" y2="${TOP + LANE_H}" stroke="#c0392b" stroke-width="2"/>`;
+  s += `<line x1="${px(pat.len)}" x2="${px(pat.len)}" y1="${TOP}" y2="${TOP + LANE_H}" stroke="rgba(var(--oil),0.9)" stroke-width="1.2" stroke-dasharray="4 4"/>`;
+  s += `<text x="${px(pat.len)}" y="${TOP - 12}" font-size="11" fill="var(--muted)" text-anchor="middle">oil ends ${pat.len} ft</text>`;
+  // dots at 7 ft and arrows at 15 ft
+  for (const b of [3, 5, 8, 11, 14, 26, 29, 32, 35, 37]) s += `<circle cx="${px(7)}" cy="${py(b)}" r="1.8" fill="var(--wood-line-5)"/>`;
+  for (const b of [5, 10, 15, 20, 25, 30, 35]) {
+    const x = px(ARROWS_FT), y = py(b);
+    s += `<path d="M${x + 7} ${y} L${x - 5} ${y - 3.5} L${x - 5} ${y + 3.5} Z" fill="rgba(90,60,20,0.55)"/>`;
+  }
+  // pocket marker
+  s += `<line x1="${px(56)}" x2="${px(LEN_FT)}" y1="${py(POCKET)}" y2="${py(POCKET)}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/>`;
+  s += `<text x="${px(56) - 4}" y="${py(POCKET) + 4}" font-size="11" fill="var(--muted)" text-anchor="end">pocket 17.5</text>`;
+  // pins
+  const off = 12 / (41.5 / 39) / 2;   // half pin spacing in boards
+  const rows = [[0], [-1, 1], [-2, 0, 2], [-3, -1, 1, 3]];
+  rows.forEach((r, i) => r.forEach(j => {
+    s += `<ellipse cx="${px(PINS_FT + i * 0.866)}" cy="${py(20 + j * off)}" rx="${0.2 * SX}" ry="${2.25 * SB}" fill="var(--pin)" stroke="var(--pin-stroke)" stroke-width="1"/>`;
+  }));
+  // axis labels
+  for (let f = 0; f <= 60; f += 5) {
+    s += `<line x1="${px(f)}" x2="${px(f)}" y1="${TOP + LANE_H + 8}" y2="${TOP + LANE_H + 13}" stroke="var(--muted)"/>`;
+    s += `<text x="${px(f)}" y="${TOP + LANE_H + 25}" font-size="11" fill="var(--muted)" text-anchor="middle">${f} ft</text>`;
+  }
+  for (const b of [1, 10, 20, 30, 39]) s += `<text x="${LEFT - 6}" y="${py(b) + 4}" font-size="10.5" fill="var(--muted)" text-anchor="end">${b}</text>`;
+  s += `<text x="${LEFT - 6}" y="${TOP - 12}" font-size="10.5" fill="var(--muted)" text-anchor="end">board</text>`;
+  return s;
+}
+
+function marker(type, p, color) {
+  if (!p) return '';
+  const x = px(p.y), y = py(p.b);
+  if (type === 'hook') return `<circle cx="${x}" cy="${y}" r="5" fill="var(--card)" stroke="${color}" stroke-width="2.2"/>`;
+  if (type === 'bp') return `<rect x="${x - 4.5}" y="${y - 4.5}" width="9" height="9" transform="rotate(45 ${x} ${y})" fill="${color}" stroke="var(--card)" stroke-width="1.2"/>`;
+  return `<circle cx="${x}" cy="${y}" r="5" fill="${color}" stroke="var(--card)" stroke-width="1.2"/>`;
+}
+
+let LINES = [];
+
+function buildLines() {
+  const cond = {
+    pattern: state.pattern, speed: state.speedMph, rpm: state.rpm,
+    axisRot: 45, tilt: 15, release: state.release, target: state.target,
+  };
+  let items = [];
+  if (state.mode === 'weights') {
+    const b = DB.get(state.ball);
+    items = [...state.weights].filter(w => b.weights.has(w)).sort((a, c) => c - a).map(w => ({ label: `${w} lb`, ball: b, weight: w }));
+  } else {
+    items = [...state.balls].map(n => DB.get(n)).filter(b => b && b.weights.has(state.weight)).map(b => ({ label: b.name, ball: b, weight: state.weight }));
+  }
+  items = items.slice(0, MAX_LINES);
+  const aimed = it => { const sp = it.ball.weights.get(it.weight); return state.release == null ? optimalAim(it.ball, sp, cond) : autoAim(it.ball, sp, cond); };
+  // Same line: average of each ball's own line, so strong balls finish high and weak ones light.
+  let ref = null;
+  if (state.aim === 'same' && items.length) {
+    const own = items.map(aimed);
+    ref = { release: own.reduce((a, r) => a + r.release, 0) / own.length, target: own.reduce((a, r) => a + r.target, 0) / own.length };
+  }
+  return items.map((it, i) => {
+    const spec = it.ball.weights.get(it.weight);
+    let res;
+    if (state.aim === 'manual') res = simulate(it.ball, spec, { ...cond, release: state.release ?? 25 });
+    else if (ref) { res = simulate(it.ball, spec, { ...cond, release: ref.release, target: ref.target }); res.sameLine = true; }
+    else res = aimed(it);
+    return { ...it, spec, res, color: COLORS[i] };
+  });
+}
+
+function render() {
+  if (!DB.size) return;
+  LINES = buildLines();
+  const svg = $('lane');
+  svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`);
+  let s = laneBackground();
+  for (const L of LINES) {
+    const d = L.res.pts.map((p, i) => `${i ? 'L' : 'M'}${px(p.y).toFixed(1)} ${py(p.b).toFixed(1)}`).join(' ');
+    s += `<path d="${d}" fill="none" stroke="${L.color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" opacity="0.95"/>`;
+  }
+  for (const L of LINES) {
+    const r = L.res, rollP = r.rollFt != null ? r.pts.find(p => p.y >= r.rollFt) : null;
+    s += marker('hook', r.hookStart, L.color) + marker('bp', r.breakpoint, L.color) + marker('roll', rollP, L.color);
+  }
+  s += `<g id="hoverG" style="display:none"><line id="hoverLine" y1="${TOP}" y2="${TOP + LANE_H}" stroke="var(--ink)" stroke-width="1" opacity="0.35"/></g>`;
+  svg.innerHTML = s;
+  const lateralPxPerFt = SB / (BW / FT);
+  $('scaleCap').textContent = `Lane width exaggerated about ${(lateralPxPerFt / SX).toFixed(0)}× so the curve is visible.`;
+  renderTable();
+}
+
+const f1 = x => x.toFixed(1);
+// Turn length: feet over which the ball makes the middle 80% of its direction change.
+function shapeLabel(r) {
+  if (r.gutter || r.turnLen == null) return '—';
+  if (r.turnDeg < 3) return '<span class="cap">little hook</span>';
+  const name = r.turnLen < 24 ? 'Angular' : r.turnLen < 28 ? 'Medium' : 'Arc';
+  return `${name} <span class="cap">${r.turnLen.toFixed(0)} ft</span>`;
+}
+function phaseAt(r, yft) {
+  if (r.rollFt != null && yft >= r.rollFt) return 'roll';
+  if (r.hookStart && yft >= r.hookStart.y) return 'hook';
+  return 'skid';
+}
+
+function renderTable() {
+  const head = `<tr><th>Line</th><th>Ball</th><th class="num">Wt</th><th class="num">RG</th><th class="num">Diff</th><th class="num">Int diff</th><th>Cover / finish</th>
+    <th class="num">Release</th><th class="num">Target @ arrows</th><th class="num">Hook starts</th><th class="num">Breakpoint</th><th class="num">Rolls at</th><th title="Distance over which the ball makes most of its turn: short = angular, long = smooth arc">Hook shape</th><th class="num">Entry angle</th><th class="num">Board at pins</th><th class="num">Speed at pins</th></tr>`;
+  const rows = LINES.map(L => {
+    const r = L.res, b = L.ball;
+    const pins = r.gutter ? `<span class="warn">${r.gutter} gutter</span>` : f1(r.pinsBoard);
+    const note = r.aimNote ? `<tr><td></td><td colspan="15" class="warn">${esc(r.aimNote)}</td></tr>` : '';
+    return `<tr>
+      <td><span class="sw" style="background:${L.color}"></span>${esc(L.label)}</td>
+      <td>${esc(b.name)}${b.brand ? ` <span class="cap">${esc(b.brand)}</span>` : ''}</td>
+      <td class="num">${L.weight}</td><td class="num">${L.spec.rg.toFixed(2)}</td><td class="num">${L.spec.diff.toFixed(3)}</td>
+      <td class="num">${b.sym === 'asymmetric' ? L.spec.intDiff.toFixed(3) : '—'}</td>
+      <td>${COVERS[b.cover].label}, ${esc(b.gritText || b.grit + ' grit')}</td>
+      <td class="num">${f1(r.release)}${r.optimal ? ' <span class="cap">opt</span>' : ''}${r.sameLine ? ' <span class="cap">same</span>' : ''}${r.moved ? ' <span class="warn" title="Moved left to keep the ball off the gutter">*</span>' : ''}</td>
+      <td class="num">${f1(r.target)}</td>
+      <td class="num">${r.hookStart ? f1(r.hookStart.y) + ' ft' : '—'}</td>
+      <td class="num">${r.breakpoint ? `bd ${f1(r.breakpoint.b)} @ ${r.breakpoint.y.toFixed(0)} ft` : '—'}</td>
+      <td class="num">${r.rollFt != null ? f1(r.rollFt) + ' ft' : 'not before pins'}</td>
+      <td>${shapeLabel(r)}</td>
+      <td class="num">${r.gutter ? '—' : f1(r.entry) + '°'}</td>
+      <td class="num">${pins}</td>
+      <td class="num">${fmtSpeed(r.pinsSpeed)}</td>
+    </tr>${note}`;
+  }).join('');
+  $('results').innerHTML = head + (rows || `<tr><td colspan="16" class="cap">Pick at least one ${state.mode === 'weights' ? 'weight' : 'ball'}.</td></tr>`);
+}
+
+// hover readout
+function initHover() {
+  const svg = $('lane'), tip = $('hover');
+  svg.addEventListener('mousemove', e => {
+    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const yft = (p.x - LEFT) / SX;
+    const g = $('hoverG');
+    if (yft < 0 || yft > PINS_FT || !LINES.length) { g.style.display = 'none'; tip.style.display = 'none'; return; }
+    g.style.display = ''; $('hoverLine').setAttribute('x1', p.x); $('hoverLine').setAttribute('x2', p.x);
+    const rows = LINES.map(L => {
+      const pts = L.res.pts, q = pts.find(pp => pp.y >= yft);
+      if (!q) return '';
+      return `<div><span class="sw" style="background:${L.color}"></span>${esc(L.label)}: board ${f1(q.b)} · ${phaseAt(L.res, yft)}</div>`;
+    }).join('');
+    tip.innerHTML = `<div class="cap">${yft.toFixed(0)} ft</div>${rows}`;
+    tip.style.display = 'block';
+    const wrap = svg.parentElement.getBoundingClientRect();
+    let left = e.clientX - wrap.left + 14;
+    if (left + tip.offsetWidth > wrap.width) left = e.clientX - wrap.left - tip.offsetWidth - 14;
+    tip.style.left = left + 'px'; tip.style.top = (e.clientY - wrap.top + 12) + 'px';
+  });
+  svg.addEventListener('mouseleave', () => { $('hover').style.display = 'none'; const g = $('hoverG'); if (g) g.style.display = 'none'; });
+}
+
+// ---------- Boot ----------
+initControls();
+initHover();
+try {
+  const saved = store.get('bml.csv');
+  if (saved) loadData(saved, store.get('bml.src') || 'saved');
+  else loadData(BUILTIN_CSV, 'built-in');
+} catch (e) { loadData(BUILTIN_CSV, 'built-in'); }
+</script>
+</body>
+</html>
