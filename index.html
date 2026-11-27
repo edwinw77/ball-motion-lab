@@ -24,7 +24,7 @@
   h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
   .sub { margin: 2px 0 0; color: var(--muted); }
   .layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 12px 28px 32px; align-items: start; }
-  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } .layout > .panel { position: static; } }
   .panel, .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
   .panel { padding: 6px 16px 16px; position: sticky; top: 12px; }
   .panel section { padding: 12px 0; border-bottom: 1px solid var(--line); }
@@ -71,7 +71,7 @@
 <body>
 <header>
   <h1>Ball Motion Lab</h1>
-  <p class="sub">How ball specs change the path down the lane: right-handed bowler, fresh oil.</p>
+  <p class="sub">How ball specs change the path down the lane: right-handed bowler, fresh or played-on oil.</p>
 </header>
 
 <main class="layout">
@@ -95,6 +95,9 @@
     <section>
       <h2>Conditions</h2>
       <label><span>Oil pattern</span><select id="patternSel"></select></label>
+      <div class="field"><span class="lbl">Lane play <b id="gamesVal" style="float:right;color:var(--ink)"></b></span>
+        <input type="range" id="gamesRange" min="0" max="6" step="1" value="0" aria-label="Games played on the pair">
+      </div>
       <div class="field"><span class="lbl">Ball speed <b id="speedVal" style="float:right;color:var(--ink)"></b></span><div class="seg" id="speedSeg"></div>
         <input type="range" id="speedRange" aria-label="Ball speed">
       </div>
@@ -148,7 +151,7 @@
 
     <div class="card tablewrap">
       <table id="results"></table>
-      <p class="cap" style="margin:8px 0 0">Boards count from the right gutter (1) to the left (39). With the release empty, each ball gets its optimal line (<span class="cap">opt</span>): it hits the pocket with an entry angle as close to 6° as possible, breakpoint at board 4 or further left. With a release set, <span class="warn">*</span> means it was moved left so the ball stays off the right gutter. <b>Same line</b> throws every ball on one shared line, the average of their own lines (<span class="cap">same</span>), so differences show directly. <b>Hook shape</b> is how far the ball travels while making most of its turn: under 24 ft angular, 24–28 ft medium, 28 ft and over arc.</p>
+      <p class="cap" style="margin:8px 0 0">Boards count from the right gutter (1) to the left (39). With the release empty, each ball gets its optimal line (<span class="cap">opt</span>): it hits the pocket with an entry angle as close to 6° as possible, breakpoint at board 4 or further left. With a release set, <span class="warn">*</span> means it was moved left so the ball stays off the right gutter. <b>Same line</b> throws every ball on one shared line, the average of their own lines (<span class="cap">same</span>), so differences show directly. With lane play, each ball keeps its fresh-oil line; the dashed path is that line on fresh oil, and the bracket after the board at pins is the change from fresh. <b>Hook shape</b> is how far the ball travels while making most of its turn: under 24 ft angular, 24–28 ft medium, 28 ft and over arc.</p>
     </div>
 
     <div class="card">
@@ -161,7 +164,8 @@
           <li><b>Coverstock and grit</b> set friction in oil and on dry boards, and how friction rises as the oil thins. Solid, hybrid and sanded surfaces start gripping as soon as the oil thins (earlier read, smooth arc). Pearl, finely sanded and polished surfaces stay slick until the boards are nearly dry, then grab hard (skid, then snap). Polish also lowers friction in the oil (more length); a factory compound counts as half a polish. Multi-step finishes use the final grit.</li>
           <li><b>Asymmetric cores</b> (intermediate differential) make the response sharper, so the motion is more angular.</li>
           <li><b>Weight</b> on its own barely changes the path (mass cancels out of the friction equations). Weight comparisons differ because each weight has different RG and differential.</li>
-          <li>Oil is fresh and thins gradually through the midlane before ending. House patterns have less oil on the outside boards; the sport pattern is flat across.</li>
+          <li><b>Lane play</b> applies preset wear from mostly right-handed traffic: a drier track from about board 13 at the foul line to board 8 at the end of the pattern, and carrydown oil pushed past the pattern onto the backend. Both grow with games played. Each ball keeps the line it had on fresh oil, and the dashed path shows that fresh-oil path for comparison. This is a gauge, not a measured wear pattern.</li>
+          <li>The base oil thins gradually through the midlane before ending. House patterns have less oil on the outside boards; the sport pattern is flat across.</li>
           <li>Not modelled: layout (pin-to-PAP, drilling angle), which in real life can make the same ball smoother or more angular. A neutral layout is assumed.</li>
         </ul>
       </details>
@@ -331,7 +335,8 @@ function parseCSV(text) {
 }
 
 // ---------- Lane oil ----------
-function oilAt(board, yft, pat) {
+// games > 0 applies preset wear from mostly right-handed play (see the end of this function).
+function oilAt(board, yft, pat, games = 0) {
   const end = pat.len, start = pat.len - pat.taper, mid = pat.len * 0.4;
   // oil thins gradually through the midlane, then tapers off at the end of the pattern
   const base = yft <= mid ? 1 : 1 - pat.fade * Math.min(1, (yft - mid) / (start - mid));
@@ -340,7 +345,19 @@ function oilAt(board, yft, pat) {
   let ox;
   if (pat.crown) ox = e >= 12 ? 1 : e <= 3 ? 0.6 : 0.6 + 0.4 * smooth((e - 3) / 9);
   else ox = e <= 2 ? 0.85 : 1;
-  return oy * ox;
+  const fresh = oy * ox;
+  if (!games) return fresh;
+  // Track: right-handed traffic dries a band running from about board 13 at the foul line
+  // to about board 8 at the end of the pattern. Deepens with each game, up to 75% removed.
+  const centre = 13 - 5 * clamp(yft / pat.len, 0, 1);
+  const d = (board - centre) / 4.5;
+  const depletion = Math.min(0.75, 0.14 * games) * Math.exp(-d * d) * (yft < 3 ? 0.3 : 1);
+  // Carrydown: oil dragged past the end of the pattern onto the backend, fading over ~10 ft,
+  // mostly across the boards balls travel on after the breakpoint.
+  let carry = 0;
+  const past = yft - (pat.len - 2);
+  if (past > 0) carry = Math.min(0.4, 0.07 * games) * Math.exp(-past / 8) * (board >= 4 && board <= 30 ? 1 : 0.3);
+  return clamp(fresh * (1 - depletion) + carry, 0, 1);
 }
 
 // ---------- Physics ----------
@@ -379,7 +396,7 @@ function simulate(ball, spec, cond) {
   let t = 0, rolling = false, rollFt = null, gutter = null, nextRec = 0, maxLat = 0;
   while (Y < end && t < 8) {
     const board = -X / BW + 0.5, yft = Y / FT;
-    const dry = 1 - oilAt(board, yft, pat);
+    const dry = 1 - oilAt(board, yft, pat, cond.games || 0);
     const mu = muOil + (muDry - muOil) * Math.pow(dry, p);
     const sp = Math.hypot(vx, vy), dX = vx / sp, dY = vy / sp;
     let ax, ay, lat = 0;
@@ -492,7 +509,7 @@ const store = {
 };
 const state = {
   mode: 'weights', ball: null, weights: new Set(), weight: null, balls: new Set(),
-  pattern: 'house40', speed: 'med', speedMph: 17, rev: 'med', rpm: 350, release: null, aim: 'auto', target: 10,
+  pattern: 'house40', speed: 'med', speedMph: 17, rev: 'med', rpm: 350, games: 0, release: null, aim: 'auto', target: 10,
   units: store.get('bml.units') === 'kmh' ? 'kmh' : 'mph',
 };
 let DB = new Map();
@@ -587,6 +604,9 @@ function initControls() {
   $('patternSel').innerHTML = Object.entries(PATTERNS).map(([k, p]) => `<option value="${k}">${p.label}</option>`).join('');
   $('patternSel').value = state.pattern;
   $('patternSel').onchange = e => { state.pattern = e.target.value; render(); };
+  const gamesLabel = () => { $('gamesVal').textContent = state.games ? `after ${state.games} game${state.games > 1 ? 's' : ''}` : 'fresh oil'; };
+  $('gamesRange').addEventListener('input', e => { state.games = +e.target.value; gamesLabel(); render(); });
+  gamesLabel();
   seg('modeSeg', null, 'mode', () => { $('weightsMode').hidden = state.mode !== 'weights'; $('ballsMode').hidden = state.mode !== 'balls'; });
   seg('speedSeg', SPEEDS, 'speed', () => { state.speedMph = SPEEDS[state.speed].v; syncSpeeds(); });
   seg('unitsSeg', null, 'units', () => { store.set('bml.units', state.units); refreshSpeedLabels(); syncSpeeds(); });
@@ -650,8 +670,8 @@ function laneBackground() {
   s += `<rect x="${LEFT}" y="${TOP + LANE_H}" width="${LEN_FT * SX}" height="8" fill="var(--gutter)"/>`;
   s += `<rect x="${LEFT}" y="${TOP}" width="${LEN_FT * SX}" height="${LANE_H}" fill="var(--wood)"/>`;
   // oil
-  for (let y = 0; y < pat.len; y += 1) for (let b = 1; b <= 39; b++) {
-    const o = oilAt(b, y + 0.5, pat);
+  for (let y = 0; y < (state.games ? LEN_FT - 3 : pat.len); y += 1) for (let b = 1; b <= 39; b++) {
+    const o = oilAt(b, y + 0.5, pat, state.games);
     if (o > 0.02) s += `<rect x="${px(y)}" y="${py(b) - SB / 2}" width="${SX + 0.5}" height="${SB + 0.3}" fill="rgba(var(--oil),${(o * 0.38).toFixed(3)})"/>`;
   }
   // boards
@@ -700,7 +720,7 @@ let LINES = [];
 
 function buildLines() {
   const cond = {
-    pattern: state.pattern, speed: state.speedMph, rpm: state.rpm,
+    pattern: state.pattern, games: state.games, speed: state.speedMph, rpm: state.rpm,
     axisRot: 45, tilt: 15, release: state.release, target: state.target,
   };
   let items = [];
@@ -711,7 +731,10 @@ function buildLines() {
     items = [...state.balls].map(n => DB.get(n)).filter(b => b && b.weights.has(state.weight)).map(b => ({ label: b.name, ball: b, weight: state.weight }));
   }
   items = items.slice(0, MAX_LINES);
-  const aimed = it => { const sp = it.ball.weights.get(it.weight); return state.release == null ? optimalAim(it.ball, sp, cond) : autoAim(it.ball, sp, cond); };
+  // Lines are always chosen on fresh oil. With lane play, each ball keeps that same line
+  // (release and target) on the worn lane, so you see how it moves as the oil depletes.
+  const fresh = { ...cond, games: 0 };
+  const aimed = it => { const sp = it.ball.weights.get(it.weight); return state.release == null ? optimalAim(it.ball, sp, fresh) : autoAim(it.ball, sp, fresh); };
   // Same line: average of each ball's own line, so strong balls finish high and weak ones light.
   let ref = null;
   if (state.aim === 'same' && items.length) {
@@ -720,10 +743,16 @@ function buildLines() {
   }
   return items.map((it, i) => {
     const spec = it.ball.weights.get(it.weight);
-    let res;
-    if (state.aim === 'manual') res = simulate(it.ball, spec, { ...cond, release: state.release ?? 25 });
-    else if (ref) { res = simulate(it.ball, spec, { ...cond, release: ref.release, target: ref.target }); res.sameLine = true; }
-    else res = aimed(it);
+    let base;
+    if (state.aim === 'manual') base = simulate(it.ball, spec, { ...fresh, release: state.release ?? 25 });
+    else if (ref) { base = simulate(it.ball, spec, { ...fresh, release: ref.release, target: ref.target }); base.sameLine = true; }
+    else base = aimed(it);
+    let res = base;
+    if (state.games) {
+      res = simulate(it.ball, spec, { ...cond, release: base.release, target: base.target });
+      for (const k of ['optimal', 'sameLine', 'moved', 'aimNote']) if (base[k]) res[k] = base[k];
+      res.fresh = base;
+    }
     return { ...it, spec, res, color: COLORS[i] };
   });
 }
@@ -734,6 +763,9 @@ function render() {
   const svg = $('lane');
   svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`);
   let s = laneBackground();
+  const pathD = pts => pts.map((p, i) => `${i ? 'L' : 'M'}${px(p.y).toFixed(1)} ${py(p.b).toFixed(1)}`).join(' ');
+  for (const L of LINES) if (L.res.fresh)   // same line on fresh oil, for comparison
+    s += `<path d="${pathD(L.res.fresh.pts)}" fill="none" stroke="${L.color}" stroke-width="1.6" stroke-dasharray="5 5" opacity="0.55"/>`;
   for (const L of LINES) {
     const d = L.res.pts.map((p, i) => `${i ? 'L' : 'M'}${px(p.y).toFixed(1)} ${py(p.b).toFixed(1)}`).join(' ');
     s += `<path d="${d}" fill="none" stroke="${L.color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" opacity="0.95"/>`;
@@ -768,7 +800,9 @@ function renderTable() {
     <th class="num">Release</th><th class="num">Target @ arrows</th><th class="num">Hook starts</th><th class="num">Breakpoint</th><th class="num">Rolls at</th><th title="Distance over which the ball makes most of its turn: short = angular, long = smooth arc">Hook shape</th><th class="num">Entry angle</th><th class="num">Board at pins</th><th class="num">Speed at pins</th></tr>`;
   const rows = LINES.map(L => {
     const r = L.res, b = L.ball;
-    const pins = r.gutter ? `<span class="warn">${r.gutter} gutter</span>` : f1(r.pinsBoard);
+    const fp = r.fresh && !r.fresh.gutter && !r.gutter ? r.pinsBoard - r.fresh.pinsBoard : null;
+    const pins = r.gutter ? `<span class="warn">${r.gutter} gutter</span>`
+      : f1(r.pinsBoard) + (fp != null ? ` <span class="cap" title="Change from fresh oil on the same line">(${fp >= 0 ? '+' : ''}${f1(fp)})</span>` : '');
     const note = r.aimNote ? `<tr><td></td><td colspan="15" class="warn">${esc(r.aimNote)}</td></tr>` : '';
     return `<tr>
       <td><span class="sw" style="background:${L.color}"></span>${esc(L.label)}</td>

@@ -2,19 +2,20 @@
 
 **Live page: https://edwinw77.github.io/ball-motion-lab/**
 
-A single-page simulator that shows how a bowling ball moves down the lane: where it skids, where it hooks and where it rolls. It compares balls by their published specs under the same conditions. It models a right-handed bowler on fresh oil.
+A single-page simulator that shows how a bowling ball moves down the lane: where it skids, where it hooks and where it rolls. It compares balls by their published specs under the same conditions. It models a right-handed bowler on fresh oil, with an optional gauge for played-on oil.
 
 ## What it does
 
 - **Compare one ball across weights.** Each weight has its own RG and differential, so lighter balls can behave differently.
 - **Compare balls at one weight.** Up to 6 lines at once.
-- **Conditions:** oil pattern (House 40 / Short 35 / Long 45 / Sport 41), ball speed and rev rate (preset buttons or sliders), and release board.
+- **Conditions:** oil pattern (House 40 / Short 35 / Long 45 / Sport 41), lane play (fresh oil up to 6 games), ball speed and rev rate (preset buttons or sliders), and release board.
 - **Aim modes:**
   - **Each ball:** each ball gets its own line to the pocket. Leave the release board empty to find the optimal line (entry angle as close to 6° as possible, breakpoint at board 4 or further left).
   - **Same line:** every ball is thrown on one shared line (the average of their own lines), so the differences show directly.
   - **Manual:** you set the release and the target at the arrows.
 - **Readouts per ball:** release, target, hook start, breakpoint, roll point, hook shape (angular / medium / arc), entry angle, board at the pins and speed at the pins.
 - Hover over the lane to see each ball's board and phase (skid / hook / roll) at any distance.
+- **Lane play:** adds preset wear (a drier track and carrydown past the pattern) from mostly right-handed traffic. Each ball keeps its fresh-oil line, so you see how it moves as the oil depletes when you throw the same way. The fresh-oil path is drawn dashed, and the table shows the change in board at the pins.
 - Speed can be shown in mph or km/h.
 
 ## Ball data
@@ -41,7 +42,7 @@ Bionic,Storm,Hybrid Reactive (NRG Hybrid),4000-grit Abralon,Symmetric,15 lb,2.47
 
 The friction and flare values are calibrated estimates, not lab measurements. Use the results to compare balls, not to predict exact boards.
 
-**Not modelled:** layout (pin-to-PAP, drilling angle), oil breakdown over a session, left-handed bowlers, and pin action.
+**Not modelled:** layout (pin-to-PAP, drilling angle), shot-by-shot oil breakdown (lane play is a preset gauge), left-handed bowlers, and pin action.
 
 ## Running locally
 
